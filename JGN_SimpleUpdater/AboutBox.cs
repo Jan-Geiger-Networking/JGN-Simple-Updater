@@ -31,13 +31,13 @@ namespace JGN_SimpleUpdater
                 object[] attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyTitleAttribute), false);
                 if (attributes.Length > 0)
                 {
-                    AssemblyTitleAttribute titleAttribute = (AssemblyTitleAttribute)attributes[0];
-                    if (!string.IsNullOrEmpty(titleAttribute.Title))
+                    var titleAttribute = attributes[0] as AssemblyTitleAttribute;
+                    if (titleAttribute != null && !string.IsNullOrEmpty(titleAttribute.Title))
                     {
                         return titleAttribute.Title;
                     }
                 }
-                return System.IO.Path.GetFileNameWithoutExtension(Assembly.GetExecutingAssembly().Location);
+                return System.IO.Path.GetFileNameWithoutExtension(Assembly.GetExecutingAssembly().Location) ?? "";
             }
         }
 
@@ -45,7 +45,7 @@ namespace JGN_SimpleUpdater
         {
             get
             {
-                return Assembly.GetExecutingAssembly().GetName().Version.ToString();
+                return Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "";
             }
         }
 
@@ -58,7 +58,8 @@ namespace JGN_SimpleUpdater
                 {
                     return "";
                 }
-                return ((AssemblyDescriptionAttribute)attributes[0]).Description;
+                var desc = attributes[0] as AssemblyDescriptionAttribute;
+                return desc?.Description ?? "";
             }
         }
 
@@ -71,7 +72,8 @@ namespace JGN_SimpleUpdater
                 {
                     return "";
                 }
-                return ((AssemblyProductAttribute)attributes[0]).Product;
+                var prod = attributes[0] as AssemblyProductAttribute;
+                return prod?.Product ?? "";
             }
         }
 
@@ -84,7 +86,8 @@ namespace JGN_SimpleUpdater
                 {
                     return "";
                 }
-                return ((AssemblyCopyrightAttribute)attributes[0]).Copyright;
+                var copy = attributes[0] as AssemblyCopyrightAttribute;
+                return copy?.Copyright ?? "";
             }
         }
 
@@ -97,7 +100,8 @@ namespace JGN_SimpleUpdater
                 {
                     return "";
                 }
-                return ((AssemblyCompanyAttribute)attributes[0]).Company;
+                var comp = attributes[0] as AssemblyCompanyAttribute;
+                return comp?.Company ?? "";
             }
         }
         #endregion

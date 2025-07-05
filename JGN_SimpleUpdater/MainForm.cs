@@ -14,7 +14,6 @@ namespace JGN_SimpleUpdater
     public partial class MainForm : Form
     {
         private System.Windows.Forms.Timer downloadProgressTimer;
-        private string? letzterDownloadFortschritt = null;
         private int totalPackages = 0;
         private int finishedPackages = 0;
         private bool progressBarInitialized = false;
@@ -58,7 +57,6 @@ namespace JGN_SimpleUpdater
 
         private void RunWingetUpdate()
         {
-            letzterDownloadFortschritt = null;
             downloadProgressTimer.Start();
             totalPackages = 0;
             finishedPackages = 0;
@@ -152,7 +150,6 @@ namespace JGN_SimpleUpdater
             else if (line.Contains("Successfully installed") || line.Contains("No updates available"))
             {
                 labelPackageStatus.Text = $"Paketstatus: {currentPackage} - Fertig";
-                letzterDownloadFortschritt = null;
                 finishedPackages++;
                 if (totalPackages > 0)
                 {
@@ -163,7 +160,6 @@ namespace JGN_SimpleUpdater
             else if (line.Contains("Fehler") || line.Contains("error") || line.Contains("failed"))
             {
                 labelPackageStatus.Text = $"Paketstatus: {currentPackage} - Fehler";
-                letzterDownloadFortschritt = null;
                 finishedPackages++;
                 if (totalPackages > 0)
                 {
