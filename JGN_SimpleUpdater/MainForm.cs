@@ -17,6 +17,9 @@ namespace JGN_SimpleUpdater
         private int totalPackages = 0;
         private int finishedPackages = 0;
         private bool progressBarInitialized = false;
+        private List<string> updatedApps = new List<string>();
+        private List<string> failedApps = new List<string>();
+        private Process wingetProcess = null;
 
         [DllImport("kernel32.dll")]
         static extern bool AttachConsole(uint dwProcessId);
@@ -38,6 +41,9 @@ namespace JGN_SimpleUpdater
             this.MinimumSize = this.Size;
             downloadProgressTimer = new System.Windows.Forms.Timer();
             downloadProgressTimer.Interval = 500;
+            
+            // Event für das Schließen des Fensters hinzufügen
+            this.FormClosing += MainForm_FormClosing;
         }
 
         private async void btnStartUpdate_Click(object sender, EventArgs e)
@@ -47,12 +53,19 @@ namespace JGN_SimpleUpdater
             progressBar1.Maximum = 100;
             btnStartUpdate.Enabled = false;
             btnExit.Enabled = false;
+            
+            // Listen für Updates zurücksetzen
+            updatedApps.Clear();
+            failedApps.Clear();
 
             await Task.Run(() => RunWingetUpdate());
 
             progressBar1.Value = progressBar1.Maximum;
             btnStartUpdate.Enabled = true;
             btnExit.Enabled = true;
+            
+            // Abschlussfenster anzeigen
+            ShowCompletionDialog();
         }
 
         private void RunWingetUpdate()
@@ -75,11 +88,11 @@ namespace JGN_SimpleUpdater
                 StandardErrorEncoding = System.Text.Encoding.UTF8
             };
 
-            using var process = new Process();
-            process.StartInfo = psi;
-            process.Start();
+            wingetProcess = new Process();
+            wingetProcess.StartInfo = psi;
+            wingetProcess.Start();
 
-            var output = process.StandardOutput;
+            var output = wingetProcess.StandardOutput;
             int progress = 0;
             bool updateStarted = false;
             string currentPackage = "-";
@@ -107,7 +120,8 @@ namespace JGN_SimpleUpdater
                 ProcessWingetLineForProgress(line, ref progress, ref updateStarted, ref currentPackage);
             }
             downloadProgressTimer.Stop();
-            process.WaitForExit();
+            wingetProcess.WaitForExit();
+            wingetProcess = null; // Prozess-Referenz zurücksetzen
         }
 
         private void ProcessWingetLineForProgress(string line, ref int progress, ref bool updateStarted, ref string currentPackage)
@@ -139,12 +153,15 @@ namespace JGN_SimpleUpdater
                 if (bracket > 0)
                     rest = rest.Substring(0, bracket).Trim();
                 currentPackage = rest;
-                labelPackageStatus.Text = $"Paketstatus: {currentPackage}";
+                labelPackageStatus.Text = $"Paketstatus: {currentPackage} - Wird verarbeitet...";
             }
             // Installationsfortschritt (z.B. "Installing" oder "Downloading")
-            else if (line.Contains("Downloading") || line.Contains("Installing"))
+            else if (line.Contains("Downloading") || line.Contains("Installing") || 
+                     line.Contains("Starting package install") || line.Contains("Verifying") ||
+                     line.Contains("Installing dependencies") || line.Contains("Successfully verified"))
             {
-                labelPackageStatus.Text = $"Paketstatus: {currentPackage} - {line.Trim()}";
+                string statusText = line.Trim();
+                labelPackageStatus.Text = $"Paketstatus: {currentPackage} - {statusText}";
             }
             // Abschluss eines Pakets
             else if (line.Contains("Successfully installed") || line.Contains("No updates available"))
@@ -154,6 +171,15 @@ namespace JGN_SimpleUpdater
                 if (totalPackages > 0)
                 {
                     progressBar1.Value = Math.Min(finishedPackages, totalPackages);
+                }
+                
+                // Erfolgreich aktualisierte App zur Liste hinzufügen
+                if (!string.IsNullOrEmpty(currentPackage) && currentPackage != "-")
+                {
+                    if (!updatedApps.Contains(currentPackage))
+                    {
+                        updatedApps.Add(currentPackage);
+                    }
                 }
             }
             // Fehler
@@ -165,6 +191,26 @@ namespace JGN_SimpleUpdater
                 {
                     progressBar1.Value = Math.Min(finishedPackages, totalPackages);
                 }
+                
+                // Fehlgeschlagene App zur Liste hinzufügen
+                if (!string.IsNullOrEmpty(currentPackage) && currentPackage != "-")
+                {
+                    if (!failedApps.Contains(currentPackage))
+                    {
+                        failedApps.Add(currentPackage);
+                    }
+                }
+            }
+            // Andere wichtige Status-Informationen
+            else if (line.Contains("upgrades available") || line.Contains("Found ") || 
+                     line.Contains("Downloading") || line.Contains("Installing"))
+            {
+                string statusText = line.Trim();
+                if (statusText.Length > 50)
+                {
+                    statusText = statusText.Substring(0, 47) + "...";
+                }
+                labelPackageStatus.Text = $"Status: {statusText}";
             }
         }
 
@@ -177,6 +223,66 @@ namespace JGN_SimpleUpdater
         {
             AboutBox about = new AboutBox();
             about.ShowDialog();
+        }
+
+        private void ShowCompletionDialog()
+        {
+            string message = "Updates abgeschlossen!\n\n";
+            
+            if (updatedApps.Count > 0)
+            {
+                message += "Erfolgreich aktualisierte Apps:\n";
+                foreach (string app in updatedApps)
+                {
+                    message += $"• {app}\n";
+                }
+                message += "\n";
+            }
+            
+            if (failedApps.Count > 0)
+            {
+                message += "Fehlgeschlagene Updates:\n";
+                foreach (string app in failedApps)
+                {
+                    message += $"• {app}\n";
+                }
+                message += "\n";
+            }
+            
+            if (updatedApps.Count == 0 && failedApps.Count == 0)
+            {
+                message += "Keine Updates gefunden oder alle Apps sind bereits aktuell.";
+            }
+            
+            MessageBox.Show(message, "Updates abgeschlossen", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            // Wenn ein winget-Prozess läuft, diesen beenden
+            if (wingetProcess != null && !wingetProcess.HasExited)
+            {
+                try
+                {
+                    wingetProcess.Kill();
+                    wingetProcess.WaitForExit(3000); // Maximal 3 Sekunden warten
+                }
+                catch (Exception ex)
+                {
+                    // Fehler beim Beenden des Prozesses ignorieren
+                    Debug.WriteLine($"Fehler beim Beenden des winget-Prozesses: {ex.Message}");
+                }
+                finally
+                {
+                    wingetProcess = null;
+                }
+            }
+            
+            // Timer stoppen falls er läuft
+            if (downloadProgressTimer != null && downloadProgressTimer.Enabled)
+            {
+                downloadProgressTimer.Stop();
+            }
         }
     }
 }

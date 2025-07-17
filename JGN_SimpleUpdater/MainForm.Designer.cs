@@ -46,7 +46,10 @@
             btnStartUpdate.Size = new Size(75, 23);
             btnStartUpdate.TabIndex = 0;
             btnStartUpdate.Text = "Update All";
-            btnStartUpdate.UseVisualStyleBackColor = true;
+            btnStartUpdate.UseVisualStyleBackColor = false;
+            btnStartUpdate.BackColor = Color.LightGreen;
+            btnStartUpdate.ForeColor = Color.Black;
+            btnStartUpdate.FlatStyle = FlatStyle.Flat;
             btnStartUpdate.Click += btnStartUpdate_Click;
             // 
             // btnExit

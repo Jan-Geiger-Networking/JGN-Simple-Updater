@@ -28,8 +28,5 @@ Ein einfaches, modernes Windows-Tool, um alle installierten Programme mit WinGet
 ## Lizenz
 MIT License – siehe LICENSE-Datei.
 
-## Screenshot
-![Screenshot](screenshot.png)
-
 ---
 **Autor:** Jan Geiger Networking 
