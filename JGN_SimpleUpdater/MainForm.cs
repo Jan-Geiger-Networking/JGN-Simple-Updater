@@ -8,6 +8,9 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Text;
 using System.Linq;
+using System.Net.Http;
+using System.Text.Json;
+using System.Reflection;
 
 namespace JGN_SimpleUpdater
 {
@@ -20,6 +23,16 @@ namespace JGN_SimpleUpdater
         private List<string> updatedApps = new List<string>();
         private List<string> failedApps = new List<string>();
         private Process wingetProcess = null;
+        private static readonly HttpClient httpClient = new HttpClient();
+        private const string GITHUB_REPO_URL = "https://api.github.com/repos/Jan-Geiger-Networking/JGN-Simple-Updater/releases/latest";
+
+        // GitHub Release-Klasse für JSON-Deserialisierung
+        private class GitHubRelease
+        {
+            public string tag_name { get; set; } = "";
+            public string html_url { get; set; } = "";
+            public string body { get; set; } = "";
+        }
 
         [DllImport("kernel32.dll")]
         static extern bool AttachConsole(uint dwProcessId);
@@ -44,6 +57,9 @@ namespace JGN_SimpleUpdater
             
             // Event für das Schließen des Fensters hinzufügen
             this.FormClosing += MainForm_FormClosing;
+            
+            // Versionscheck beim Starten (asynchron)
+            _ = CheckForUpdatesAsync();
         }
 
         private async void btnStartUpdate_Click(object sender, EventArgs e)
@@ -110,7 +126,7 @@ namespace JGN_SimpleUpdater
                 }
                 
                 // Zeile zur TextBox hinzufügen
-                BeginInvoke((MethodInvoker)(() =>
+                BeginInvoke((System.Windows.Forms.MethodInvoker)(() =>
                 {
                     textBox1.AppendText(line + Environment.NewLine);
                     textBox1.SelectionStart = textBox1.Text.Length;
@@ -282,6 +298,69 @@ namespace JGN_SimpleUpdater
             if (downloadProgressTimer != null && downloadProgressTimer.Enabled)
             {
                 downloadProgressTimer.Stop();
+            }
+        }
+
+        private async Task CheckForUpdatesAsync()
+        {
+            try
+            {
+                // Aktuelle Version aus Assembly abrufen
+                var currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
+                if (currentVersion == null) return;
+
+                // GitHub API abfragen
+                httpClient.DefaultRequestHeaders.Add("User-Agent", "JGN_SimpleUpdater");
+                var response = await httpClient.GetStringAsync(GITHUB_REPO_URL);
+                var release = JsonSerializer.Deserialize<GitHubRelease>(response);
+
+                if (release != null && !string.IsNullOrEmpty(release.tag_name))
+                {
+                    // Version aus Tag parsen (z.B. "v1.0.0.2" -> Version 1.0.0.2)
+                    var versionString = release.tag_name.TrimStart('v');
+                    if (Version.TryParse(versionString, out var latestVersion))
+                    {
+                        if (latestVersion > currentVersion)
+                        {
+                            // Neue Version verfügbar - Dialog anzeigen
+                            BeginInvoke(new Action(() => ShowUpdateAvailableDialog(release)));
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Fehler beim Versionscheck ignorieren (nicht kritisch)
+                Debug.WriteLine($"Fehler beim Versionscheck: {ex.Message}");
+            }
+        }
+
+        private void ShowUpdateAvailableDialog(GitHubRelease release)
+        {
+            var message = $"Eine neue Version ist verfügbar!\n\n" +
+                         $"Aktuelle Version: {Assembly.GetExecutingAssembly().GetName().Version}\n" +
+                         $"Neue Version: {release.tag_name}\n\n" +
+                         $"Möchten Sie die neue Version herunterladen?";
+
+            var result = MessageBox.Show(message, "Update verfügbar", 
+                MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+
+            if (result == DialogResult.Yes)
+            {
+                // Download-Link öffnen
+                try
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = release.html_url,
+                        UseShellExecute = true
+                    });
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Fehler beim Öffnen des Download-Links:\n{ex.Message}", 
+                        "Fehler", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
     }
