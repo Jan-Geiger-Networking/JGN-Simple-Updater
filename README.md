@@ -50,27 +50,6 @@ Ein einfaches, modernes Windows-Tool, um alle installierten Programme mit WinGet
 - **Fehlerbehandlung**: Robuste Fehlerbehandlung für alle Update-Phasen
 - **Keine Hintergrundprozesse**: Keine Zombie-Prozesse nach Programmende
 
-## 📝 Changelog
-
-### v1.0.0.3
-- ✨ **Neue Features**:
-  - Abschlussfenster mit Übersicht der aktualisierten Apps
-  - Automatischer Versionscheck mit GitHub Integration
-  - Erweiterte Status-Anzeige für Download/Installation/Verifizierung
-  - Sichere Prozess-Beendigung beim Schließen
-- 🎨 **Design-Verbesserungen**:
-  - JGN-typischer hellgrüner Update-Button
-  - Verbesserte Benutzer-Feedback-Mechanismen
-- 🔧 **Technische Verbesserungen**:
-  - Umfassendes Update-Tracking
-  - Erweiterte Status-Erkennung
-  - Verbesserte Fehlerbehandlung
-
-### v1.0.0.1
-- Erste Release-Version
-- Grundlegende WinGet-Integration
-- Fortschrittsbalken und Log-Ausgabe
-
 ## 📄 Lizenz
 MIT License – siehe LICENSE-Datei.
 
