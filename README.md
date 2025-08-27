@@ -1,4 +1,4 @@
-# JGN Simple Updater (WinGet) v1.0.0.3
+# JGN Simple Updater (WinGet) v1.0.0.4
 
 Ein einfaches, modernes Windows-Tool, um alle installierten Programme mit WinGet im Hintergrund und ohne sichtbares Konsolenfenster zu aktualisieren. Die Anwendung zeigt den Fortschritt übersichtlich an und benötigt keine Installation.
 
@@ -50,9 +50,44 @@ Ein einfaches, modernes Windows-Tool, um alle installierten Programme mit WinGet
 - **Fehlerbehandlung**: Robuste Fehlerbehandlung für alle Update-Phasen
 - **Keine Hintergrundprozesse**: Keine Zombie-Prozesse nach Programmende
 
+## 📝 Changelog
+
+### v1.0.0.4
+- ✨ **Neue Features**:
+  - Automatische winget-Installation über PowerShell Gallery
+  - Verbesserte winget-Erkennung mit detaillierter Diagnose
+  - Intelligente Fallback-Mechanismen für winget-Installation
+- 🎨 **Design-Verbesserungen**:
+  - Übersichtlichere Installation-Dialoge
+  - Klarere Status-Meldungen und Fehlerbehandlung
+- 🔧 **Technische Verbesserungen**:
+  - Microsoft-Offizielle winget-Installation über PSGallery
+  - Entfernung von Drittanbieter-Abhängigkeiten (Chocolatey)
+  - Robuste winget-Installationsprüfung beim Programmstart
+
+### v1.0.0.3
+- ✨ **Neue Features**:
+  - Abschlussfenster mit Übersicht der aktualisierten Apps
+  - Automatischer Versionscheck mit GitHub Integration
+  - Erweiterte Status-Anzeige für Download/Installation/Verifizierung
+  - Sichere Prozess-Beendigung beim Schließen
+- 🎨 **Design-Verbesserungen**:
+  - JGN-typischer hellgrüner Update-Button
+  - Verbesserte Benutzer-Feedback-Mechanismen
+- 🔧 **Technische Verbesserungen**:
+  - Umfassendes Update-Tracking
+  - Erweiterte Status-Erkennung
+  - Verbesserte Fehlerbehandlung
+
+### v1.0.0.1
+- Erste Release-Version
+- Grundlegende WinGet-Integration
+- Fortschrittsbalken und Log-Ausgabe
+
 ## 📄 Lizenz
 MIT License – siehe LICENSE-Datei.
 
 ---
 
 **Autor:** Jan Geiger Networking  
+**GitHub:** [https://github.com/Jan-Geiger-Networking/JGN-Simple-Updater](https://github.com/Jan-Geiger-Networking/JGN-Simple-Updater) 
