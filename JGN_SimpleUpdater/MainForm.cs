@@ -58,12 +58,28 @@ namespace JGN_SimpleUpdater
             // Event für das Schließen des Fensters hinzufügen
             this.FormClosing += MainForm_FormClosing;
             
+            // winget-Installationsstatus prüfen
+            CheckWingetInstallation();
+            
             // Versionscheck beim Starten (asynchron)
             _ = CheckForUpdatesAsync();
         }
 
         private async void btnStartUpdate_Click(object sender, EventArgs e)
         {
+            // Zusätzliche Prüfung, ob winget verfügbar ist
+            if (!WingetChecker.IsWingetInstalled() || !WingetChecker.IsWingetFunctional())
+            {
+                MessageBox.Show(
+                    "winget ist nicht verfügbar oder funktioniert nicht.\n\n" +
+                    "Bitte installieren Sie winget neu und starten Sie das Programm neu.",
+                    "winget nicht verfügbar",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error
+                );
+                return;
+            }
+
             progressBar1.Style = ProgressBarStyle.Continuous;
             progressBar1.Value = 0;
             progressBar1.Maximum = 100;
@@ -299,6 +315,103 @@ namespace JGN_SimpleUpdater
             {
                 downloadProgressTimer.Stop();
             }
+        }
+
+        private void CheckWingetInstallation()
+        {
+            // Zuerst winget -v in der TextBox ausführen, damit der Benutzer sehen kann, was passiert
+            textBox1.Text = "Prüfe winget Installation...\r\n";
+            textBox1.AppendText("Führe 'winget -v' aus...\r\n\r\n");
+            
+            try
+            {
+                var process = new Process
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName = "winget",
+                        Arguments = "-v",
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        CreateNoWindow = true
+                    }
+                };
+
+                process.Start();
+                process.WaitForExit(5000);
+
+                var output = process.StandardOutput.ReadToEnd().Trim();
+                var error = process.StandardError.ReadToEnd().Trim();
+
+                textBox1.AppendText($"Exit Code: {process.ExitCode}\r\n");
+                textBox1.AppendText($"Standard Output: '{output}'\r\n");
+                textBox1.AppendText($"Standard Error: '{error}'\r\n\r\n");
+
+                if (process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output) && output.StartsWith("v") && output.Any(char.IsDigit))
+                {
+                    textBox1.AppendText("✅ winget ist installiert und funktioniert!\r\n");
+                    textBox1.AppendText($"Version: {output}\r\n\r\n");
+                    textBox1.AppendText("Tool ist einsatzbereit!\r\n\r\n");
+                }
+                else
+                {
+                    textBox1.AppendText("❌ winget ist NICHT installiert oder funktioniert nicht.\r\n");
+                    textBox1.AppendText("Zeige Installationsdialog...\r\n\r\n");
+                    
+                    // winget ist nicht installiert - Dialog anzeigen
+                    var wingetForm = new WingetInstallForm();
+                    var result = wingetForm.ShowDialog();
+                    
+                    if (!wingetForm.WingetWillBeInstalled)
+                    {
+                        // Benutzer hat abgebrochen - Tool deaktivieren
+                        textBox1.AppendText("Benutzer hat Installation abgebrochen. Tool wird deaktiviert.\r\n");
+                        DisableApplication();
+                    }
+                    else
+                    {
+                        textBox1.AppendText("Benutzer wird winget installieren. Bitte starten Sie das Programm neu.\r\n");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                textBox1.AppendText($"❌ Fehler beim Ausführen von winget -v:\r\n{ex.Message}\r\n\r\n");
+                textBox1.AppendText("Zeige Installationsdialog...\r\n\r\n");
+                
+                // winget ist nicht installiert - Dialog anzeigen
+                var wingetForm = new WingetInstallForm();
+                var result = wingetForm.ShowDialog();
+                
+                if (!wingetForm.WingetWillBeInstalled)
+                {
+                    // Benutzer hat abgebrochen - Tool deaktivieren
+                    textBox1.AppendText("Benutzer hat Installation abgebrochen. Tool wird deaktiviert.\r\n");
+                    DisableApplication();
+                }
+                else
+                {
+                    textBox1.AppendText("Benutzer wird winget installieren. Bitte starten Sie das Programm neu.\r\n");
+                }
+            }
+        }
+
+        private void DisableApplication()
+        {
+            // Alle Buttons deaktivieren
+            btnStartUpdate.Enabled = false;
+            btnAbout.Enabled = false;
+            
+            // TextBox und ProgressBar deaktivieren
+            textBox1.Enabled = false;
+            progressBar1.Enabled = false;
+            
+            // Status-Label aktualisieren
+            labelPackageStatus.Text = "Tool deaktiviert - winget erforderlich";
+            
+            // Fenster-Titel aktualisieren
+            this.Text = "JGN Simple Updater (WinGet) - DEAKTIVIERT";
         }
 
         private async Task CheckForUpdatesAsync()
