@@ -62,7 +62,11 @@ namespace JGN_SimpleUpdater
             CheckWingetInstallation();
             
             // Versionscheck beim Starten (asynchron)
-            _ = CheckForUpdatesAsync();
+            Task.Run(async () => 
+            {
+                await Task.Delay(1000); // Kurz warten, bis das Form geladen ist
+                await CheckForUpdatesAsync();
+            });
         }
 
         private async void btnStartUpdate_Click(object sender, EventArgs e)
@@ -420,32 +424,81 @@ namespace JGN_SimpleUpdater
             {
                 // Aktuelle Version aus Assembly abrufen
                 var currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
-                if (currentVersion == null) return;
+                if (currentVersion == null)
+                {
+                    Debug.WriteLine("CheckForUpdatesAsync: Aktuelle Version konnte nicht abgerufen werden");
+                    return;
+                }
+
+                Debug.WriteLine($"CheckForUpdatesAsync: Aktuelle Version: {currentVersion}");
 
                 // GitHub API abfragen
                 httpClient.DefaultRequestHeaders.Add("User-Agent", "JGN_SimpleUpdater");
                 var response = await httpClient.GetStringAsync(GITHUB_REPO_URL);
+                Debug.WriteLine($"CheckForUpdatesAsync: GitHub API Antwort erhalten, Länge: {response?.Length ?? 0}");
+                
                 var release = JsonSerializer.Deserialize<GitHubRelease>(response);
 
                 if (release != null && !string.IsNullOrEmpty(release.tag_name))
                 {
-                    // Version aus Tag parsen (z.B. "v1.0.0.2" -> Version 1.0.0.2)
-                    var versionString = release.tag_name.TrimStart('v');
+                    Debug.WriteLine($"CheckForUpdatesAsync: Release gefunden: {release.tag_name}");
+                    
+                    // Version aus Tag parsen (z.B. "v.1.0.0.4" -> Version 1.0.0.4)
+                    var versionString = release.tag_name.TrimStart('v', '.', 'V');
+                    Debug.WriteLine($"CheckForUpdatesAsync: Version String nach Trim: '{versionString}'");
+                    
                     if (Version.TryParse(versionString, out var latestVersion))
                     {
+                        Debug.WriteLine($"CheckForUpdatesAsync: Neueste Version geparst: {latestVersion}");
+                        
                         if (latestVersion > currentVersion)
                         {
+                            Debug.WriteLine($"CheckForUpdatesAsync: Neue Version verfügbar! {latestVersion} > {currentVersion}");
                             // Neue Version verfügbar - Dialog anzeigen
                             BeginInvoke(new Action(() => ShowUpdateAvailableDialog(release)));
                         }
+                        else
+                        {
+                            Debug.WriteLine($"CheckForUpdatesAsync: Keine neue Version verfügbar. {latestVersion} <= {currentVersion}");
+                        }
                     }
+                    else
+                    {
+                        Debug.WriteLine($"CheckForUpdatesAsync: Version konnte nicht geparst werden: '{versionString}'");
+                    }
+                }
+                else
+                {
+                    Debug.WriteLine($"CheckForUpdatesAsync: Kein gültiges Release gefunden. Response: {response}");
                 }
             }
             catch (Exception ex)
             {
                 // Fehler beim Versionscheck ignorieren (nicht kritisch)
                 Debug.WriteLine($"Fehler beim Versionscheck: {ex.Message}");
+                Debug.WriteLine($"Stack Trace: {ex.StackTrace}");
             }
+        }
+
+        private void UpdateStatusTextBox(string message)
+        {
+            // Verwende die vorhandene textBox1 für Status-Ausgaben
+            if (textBox1 != null)
+            {
+                textBox1.AppendText($"{DateTime.Now:HH:mm:ss} - {message}{Environment.NewLine}");
+                textBox1.ScrollToCaret();
+            }
+        }
+
+        // Manueller Update-Check Button Event
+        private async void btnCheckUpdate_Click(object sender, EventArgs e)
+        {
+            if (textBox1 != null)
+            {
+                textBox1.Clear();
+                textBox1.AppendText($"{DateTime.Now:HH:mm:ss} - Manueller Update-Check gestartet...{Environment.NewLine}");
+            }
+            await CheckForUpdatesAsync();
         }
 
         private void ShowUpdateAvailableDialog(GitHubRelease release)

@@ -1,4 +1,4 @@
-# JGN Simple Updater (WinGet) v1.0.0.4
+# JGN Simple Updater (WinGet) v1.0.0.5
 
 Ein einfaches, modernes Windows-Tool, um alle installierten Programme mit WinGet im Hintergrund und ohne sichtbares Konsolenfenster zu aktualisieren. Die Anwendung zeigt den Fortschritt übersichtlich an und benötigt keine Installation.
 
@@ -51,6 +51,13 @@ Ein einfaches, modernes Windows-Tool, um alle installierten Programme mit WinGet
 - **Keine Hintergrundprozesse**: Keine Zombie-Prozesse nach Programmende
 
 ## 📝 Changelog
+
+### v1.0.0.5 (Hotfix)
+- 🐛 **Update-Check Bugfix**: Korrektur der Versionsnummer-Parsing für GitHub-Releases
+- 🔧 **Verbesserte Fehlerbehandlung**: Alle Debug-Informationen werden sauber im Hintergrund verarbeitet
+- ✨ **Automatischer Update-Check**: Das Tool prüft automatisch auf neue Versionen beim Start
+- 🎯 **Saubere Benutzeroberfläche**: Keine störenden Debug-Ausgaben mehr in der Hauptansicht
+- 🚀 **Robuste GitHub-Integration**: Unterstützung für verschiedene Versionsnummer-Formate (v1.0.0.4, v.1.0.0.4, etc.)
 
 ### v1.0.0.4
 - ✨ **Neue Features**:
